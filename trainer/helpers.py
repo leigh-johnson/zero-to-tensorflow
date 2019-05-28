@@ -41,21 +41,25 @@ def preprocess(frame,
     return downsampled.astype(np.float).ravel()
 
 
-def discount_rewards(reward, gamma):
+def discount_rewards(r, decay_factor=0.99):
     '''
-        Assign moves a reward between (0, 1)
+        Assign moves a reward between (-1, 1)
 
         Compute reward 1 => r > 0 for moves that contribute to game points
         Compute reward -1 <= r < 0 for moves that contribute to being hit by enemies
 
     '''
-    reward = np.array(reward)
+    r = np.array(r)
+    # initialize discounted reward array with zeros
     discounted_r = np.zeros_like(r)
-    running_add = 0
+
+    # r[t] == sum of all rewards occurring after t
+    sum_r = 0
+    # initialize var that will hold sum through reverse iteration
     for t in reversed(range(0, r.size)):
         if r[t] != 0:
             # reset the sum, since this was a game boundary (pong specific!)
-            running_add = 0
-        running_add = running_add * gamma + r[t]
-        discounted_r[t] = running_add
+            sum_r = 0
+        sum_r = sum_r * decay_factor + r[t]
+        discounted_r[t] = sum_r
     return discounted_r.tolist()
