@@ -25,5 +25,5 @@ deploy:
     secure: PLEASE_REPLACE_ME
   on:
     tags: true
-    repo: leigh-johnson/zero_to_spaceinvaders_ai
+    repo: leigh-johnson/zero_to_tensorflow
     python: 3.6

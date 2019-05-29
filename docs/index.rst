@@ -1,4 +1,4 @@
-Welcome to From Zero to Reinforcement Learning: training a Space Invaders bot using Tensorflow, Keras, OpenAI Gym's documentation!
+Welcome to From Zero to Tensorflow
 ======================================
 
 .. toctree::
