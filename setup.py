@@ -11,7 +11,8 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = ['gym[atari]', 'tensorflow==2.0.0-alpha0', 'numpy']
+requirements = ['gym[atari]', 'tensorflow==2.0.0-alpha0',
+                'numpy', 'tf-agents-nightly']
 
 setup_requirements = ['pytest-runner', ]
 
