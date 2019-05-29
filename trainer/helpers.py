@@ -24,12 +24,12 @@ def monitor_env(env, video_dir='video/'):
 # https://gist.github.com/karpathy/a4166c7fe253700972fcbc77e4ea32c5
 
 
-def preprocess(frame,
-               # default OpenAI Atart Env frame size
-               downsample_factor=2,
-               # "erase" pixels with this color - use this setting to cancel background colors and reduce noise in input data
-               ignore_rgb_values=[144, 104]
-               ):
+def preprocess_frame(frame,
+                     # default OpenAI Atart Env frame size
+                     downsample_factor=2,
+                     # "erase" pixels with this color - use this setting to cancel background colors and reduce noise in input data
+                     ignore_rgb_values=[144, 104]
+                     ):
     ''' Converts 210x160x3 uint8 frame into 8400 (105 x 80) 1D float vector '''
     # output a 1D float vector, downsampled by factor of 2 (105 x 80)
 
