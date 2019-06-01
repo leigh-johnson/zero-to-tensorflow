@@ -23,4 +23,5 @@ ml-engine-job:
 		--learning-rate ${LEARNING_RATE} \
 		--save-checkpoint-steps ${CHECKPOINT_STEPS} \
 		--n-epoch ${N_EPOCH} \
-		--restore ${RESTORE}
+		--restore ${RESTORE} \
+		--render FALSE

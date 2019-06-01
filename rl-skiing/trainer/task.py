@@ -350,8 +350,9 @@ def parse_args():
     )
     parser.add_argument(
         '--render',
-        type=bool,
-        default=True,
+        type=str2bool,
+        nargs='?',
+        const=True, default=True,
         help='Render gameplay visually (and record to --video-dir'
     )
     parser.add_argument(
