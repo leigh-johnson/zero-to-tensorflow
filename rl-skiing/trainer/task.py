@@ -301,12 +301,12 @@ def parse_args():
         help='Number of batches to divide dataset into. Each epoch (training round) consists of dataset_size / batch_size training sets'
     )
     parser.add_argument(
-        '--output-dir',
+        '--job-dir',
         type=str,
         default='training-output',
         help='Directory where Tensorflow checkpoints will be written'
     )
-     parser.add_argument(
+    parser.add_argument(
         '--restore',
         type=str2bool, 
         nargs='?',

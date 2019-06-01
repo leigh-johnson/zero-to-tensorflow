@@ -20,8 +20,7 @@ ml-engine-job:
 		--region ${REGION} \
 		--runtime-version ${TENSORFLOW_VERSION} \
 		-- \
-		--output-dir ${OUTPUT_DIR}  \
 		--learning-rate ${LEARNING_RATE} \
 		--save-checkpoint-steps ${CHECKPOINT_STEPS} \
 		--n-epoch ${N_EPOCH} \
-		--RESTORE ${RESTORE}
+		--restore ${RESTORE}
