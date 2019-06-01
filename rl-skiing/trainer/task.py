@@ -172,13 +172,13 @@ def main(args):
 
     with tf.Session(graph=g) as sess:
         if args.restore:
-            restore_path = tf.train.latest_checkpoint(args.output_dir)
+            restore_path = tf.train.latest_checkpoint(args.job_dir)
             logging.info('Restoring from {}'.format(restore_path))
             saver.restore(sess, restore_path)
         else:
             sess.run(init)
 
-        summary_path = os.path.join(args.output_dir, 'summary')
+        summary_path = os.path.join(args.job_dir, 'summary')
         summary_writer = tf.summary.FileWriter(summary_path, sess.graph)
 
         # lowest possible score after an episode as the
@@ -261,7 +261,7 @@ def main(args):
 
                 summary_writer.add_summary(summary, _global_step)
 
-                save_path = os.path.join(args.output_dir, 'model.ckpt')
+                save_path = os.path.join(args.job_dir, 'model.ckpt')
                 save_path = saver.save(
                     sess, save_path, global_step=_global_step)
                 logging.info('Model checkpoint saved: {}'.format(save_path))
@@ -308,10 +308,10 @@ def parse_args():
     )
     parser.add_argument(
         '--restore',
-        type=str2bool, 
+        type=str2bool,
         nargs='?',
         const=True, default=False,
-        help='Restore from latest checkpoint in --output-dir'
+        help='Restore from latest checkpoint in --job-dir'
     )
     parser.add_argument(
         '--video-dir',
