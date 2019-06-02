@@ -7,7 +7,8 @@ from setuptools import setup, find_packages, Command
 from distutils.command.build import build as _build
 
 
-requirements = ['cmake', 'gym[atari]', 'tensorflow',
+requirements = ['cmake', 'gym[atari]', 'tensorflow;sys_platform=="darwin"',
+                'tensorflow;sys_platform=="linux"',
                 'numpy', 'agents']
 
 setup_requirements = ['pytest-runner', ]

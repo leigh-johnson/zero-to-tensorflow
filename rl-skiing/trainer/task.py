@@ -382,6 +382,6 @@ if __name__ == '__main__':
     if args.gpu and tf.test.gpu_device_name():
         logging.info('Default GPU: {}'.format(tf.test.gpu_device_name()))
     elif args.gpu:
-        logger.error('Failed to find default GPU.')
+        logging.error('Failed to find default GPU.')
         sys.exit(1)
     main(args)
