@@ -8,7 +8,7 @@ from distutils.command.build import build as _build
 
 
 requirements = ['cmake', 'gym[atari]', 'tensorflow;sys_platform=="darwin"',
-                'tensorflow;sys_platform=="linux"',
+                'tensorflow-gpu;sys_platform=="linux"',
                 'numpy', 'agents']
 
 setup_requirements = ['pytest-runner', ]

@@ -21,6 +21,7 @@ import tensorflow as tf
 import numpy as np
 import gym
 
+from tensorflow.python.client import device_lib
 from trainer.helpers import discount_rewards, preprocess_frame
 from agents.tools.wrappers import AutoReset, FrameHistory
 
@@ -77,100 +78,102 @@ def main(args):
     args_dict = vars(args)
     logging.info('args: {}'.format(args_dict))
 
-    with tf.Graph().as_default() as g:
-        # rollout subgraph
-        with tf.name_scope('rollout'):
-            observations = tf.placeholder(
-                shape=(None, OBSERVATION_DIM), dtype=tf.float32)
+    with tf.device('/device:GPU:0'):
+        with tf.Graph().as_default() as g:
+            # rollout subgraph
+            with tf.name_scope('rollout'):
+                observations = tf.placeholder(
+                    shape=(None, OBSERVATION_DIM), dtype=tf.float32)
 
-            logits = build_graph(observations)
+                logits = build_graph(observations)
 
-            logits_for_sampling = tf.reshape(
-                logits, shape=(1, len(ACTIONS)))
+                logits_for_sampling = tf.reshape(
+                    logits, shape=(1, len(ACTIONS)))
 
-            # Sample the action to be played during rollout.
-            sample_action = tf.squeeze(tf.multinomial(
-                logits=logits_for_sampling, num_samples=1), )
+                # Sample the action to be played during rollout.
+                sample_action = tf.squeeze(tf.multinomial(
+                    logits=logits_for_sampling, num_samples=1), )
 
-        optimizer = tf.train.RMSPropOptimizer(
-            learning_rate=args.learning_rate,
-            decay=args.rmsprop_decay
-        )
-
-        # dataset subgraph for experience replay
-        with tf.name_scope('dataset'):
-            # the dataset reads from MEMORY
-            ds = tf.data.Dataset.from_generator(
-                gen, output_types=(tf.float32, tf.int32, tf.float32))
-            ds = ds.shuffle(MAX_MEMORY_LEN).repeat().batch(args.batch_size)
-            iterator = ds.make_one_shot_iterator()
-
-        # training subgraph
-        with tf.name_scope('train'):
-            # the train_op includes getting a batch of data from the dataset, so we do not need to use a feed_dict when running the train_op.
-            next_batch = iterator.get_next()
-            train_observations, labels, processed_rewards = next_batch
-
-            # This reuses the same weights in the rollout phase.
-            train_observations.set_shape((args.batch_size, OBSERVATION_DIM))
-            train_logits = build_graph(train_observations)
-
-            cross_entropies = tf.nn.sparse_softmax_cross_entropy_with_logits(
-                logits=train_logits,
-                labels=labels
+            optimizer = tf.train.RMSPropOptimizer(
+                learning_rate=args.learning_rate,
+                decay=args.rmsprop_decay
             )
 
-            # Extra loss when the paddle is moved, to encourage more natural moves.
-            probs = tf.nn.softmax(logits=train_logits)
-            move_cost = args.move_penalty * \
-                tf.reduce_sum(probs * [a['penalty']
-                                       for a in ACTIONS.values()], axis=1)
-            loss = tf.reduce_sum(processed_rewards *
-                                 cross_entropies + move_cost)
+            # dataset subgraph for experience replay
+            with tf.name_scope('dataset'):
+                # the dataset reads from MEMORY
+                ds = tf.data.Dataset.from_generator(
+                    gen, output_types=(tf.float32, tf.int32, tf.float32))
+                ds = ds.shuffle(MAX_MEMORY_LEN).repeat().batch(args.batch_size)
+                iterator = ds.make_one_shot_iterator()
 
-            global_step = tf.train.get_or_create_global_step()
+            # training subgraph
+            with tf.name_scope('train'):
+                # the train_op includes getting a batch of data from the dataset, so we do not need to use a feed_dict when running the train_op.
+                next_batch = iterator.get_next()
+                train_observations, labels, processed_rewards = next_batch
 
-            train_op = optimizer.minimize(loss, global_step=global_step)
+                # This reuses the same weights in the rollout phase.
+                train_observations.set_shape(
+                    (args.batch_size, OBSERVATION_DIM))
+                train_logits = build_graph(train_observations)
 
-        init = tf.global_variables_initializer()
-        saver = tf.train.Saver(max_to_keep=args.max_to_keep)
+                cross_entropies = tf.nn.sparse_softmax_cross_entropy_with_logits(
+                    logits=train_logits,
+                    labels=labels
+                )
 
-        with tf.name_scope('summaries'):
-            rollout_reward = tf.placeholder(
-                shape=(),
-                dtype=tf.float32
-            )
+                # Extra loss when the paddle is moved, to encourage more natural moves.
+                probs = tf.nn.softmax(logits=train_logits)
+                move_cost = args.move_penalty * \
+                    tf.reduce_sum(probs * [a['penalty']
+                                           for a in ACTIONS.values()], axis=1)
+                loss = tf.reduce_sum(processed_rewards *
+                                     cross_entropies + move_cost)
 
-            # the weights to the hidden layer can be visualized
-            hidden_weights = tf.trainable_variables()[0]
-            for h in range(args.hidden_dim):
-                slice_ = tf.slice(hidden_weights, [0, h], [-1, 1])
-                image = tf.reshape(
-                    slice_, [1, OBSERVATION_DIM_Y, OBSERVATION_DIM_X, 1])
-                tf.summary.image('hidden_{:04d}'.format(h), image)
+                global_step = tf.train.get_or_create_global_step()
 
-            for var in tf.trainable_variables():
-                tf.summary.histogram(var.op.name, var)
-                tf.summary.scalar('{}_max'.format(
-                    var.op.name), tf.reduce_max(var))
-                tf.summary.scalar('{}_min'.format(
-                    var.op.name), tf.reduce_min(var))
+                train_op = optimizer.minimize(loss, global_step=global_step)
 
-            tf.summary.scalar('rollout_reward', rollout_reward)
-            tf.summary.scalar('loss', loss)
+            init = tf.global_variables_initializer()
+            saver = tf.train.Saver(max_to_keep=args.max_to_keep)
 
-            merged = tf.summary.merge_all()
+            with tf.name_scope('summaries'):
+                rollout_reward = tf.placeholder(
+                    shape=(),
+                    dtype=tf.float32
+                )
 
-        logging.info('Number of trainable variables: {}'.format(
-            len(tf.trainable_variables())))
+                # the weights to the hidden layer can be visualized
+                hidden_weights = tf.trainable_variables()[0]
+                for h in range(args.hidden_dim):
+                    slice_ = tf.slice(hidden_weights, [0, h], [-1, 1])
+                    image = tf.reshape(
+                        slice_, [1, OBSERVATION_DIM_Y, OBSERVATION_DIM_X, 1])
+                    tf.summary.image('hidden_{:04d}'.format(h), image)
 
-    inner_env = gym.make('Skiing-v0')
-    # tf.agents helper to more easily track consecutive pairs of frames
-    env = FrameHistory(inner_env, past_indices=[0, 1], flatten=False)
-    # tf.agents helper to automatically reset the environment
-    env = AutoReset(env)
+                for var in tf.trainable_variables():
+                    tf.summary.histogram(var.op.name, var)
+                    tf.summary.scalar('{}_max'.format(
+                        var.op.name), tf.reduce_max(var))
+                    tf.summary.scalar('{}_min'.format(
+                        var.op.name), tf.reduce_min(var))
 
-    with tf.Session(graph=g) as sess:
+                tf.summary.scalar('rollout_reward', rollout_reward)
+                tf.summary.scalar('loss', loss)
+
+                merged = tf.summary.merge_all()
+
+            logging.info('Number of trainable variables: {}'.format(
+                len(tf.trainable_variables())))
+
+            inner_env = gym.make('Skiing-v0')
+            # tf.agents helper to more easily track consecutive pairs of frames
+            env = FrameHistory(inner_env, past_indices=[0, 1], flatten=False)
+            # tf.agents helper to automatically reset the environment
+            env = AutoReset(env)
+
+    with tf.Session(graph=g, config=tf.ConfigProto(log_device_placement=True, allow_soft_placement=True)) as sess:
         if args.restore:
             restore_path = tf.train.latest_checkpoint(args.job_dir)
             logging.info('Restoring from {}'.format(restore_path))
@@ -377,11 +380,7 @@ def parse_args():
 
 if __name__ == '__main__':
     args = parse_args()
-
     logging.basicConfig(level=args.loglevel)
-    if args.gpu and tf.test.gpu_device_name():
-        logging.info('Default GPU: {}'.format(tf.test.gpu_device_name()))
-    elif args.gpu:
-        logging.error('Failed to find default GPU.')
-        sys.exit(1)
+    logging.info(device_lib.list_local_devices())
+    logging.info(tf.test.is_gpu_available())
     main(args)

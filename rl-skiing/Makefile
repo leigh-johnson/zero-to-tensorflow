@@ -8,7 +8,7 @@ TENSORFLOW_VERSION=1.13
 CHECKPOINT_STEPS=1
 N_EPOCH=1000
 RESTORE=FALSE
-SCALE_TIER=BASIC_GPU
+SCALE_TIER=STANDARD_1
 
 .PHONY: ai-platform-job
 
@@ -27,4 +27,3 @@ ai-platform-job:
 		--n-epoch ${N_EPOCH} \
 		--restore ${RESTORE} \
 		--render FALSE \
-		--gpu ${GPU}
