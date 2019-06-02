@@ -14,6 +14,7 @@
 # Lib
 from gym.wrappers import Monitor
 import numpy as np
+import logging
 
 
 def monitor_env(env, video_dir='video/'):
@@ -50,17 +51,18 @@ def discount_rewards(r, decay_factor=0.99):
         Compute reward -1 <= r < 0 for moves that contribute to being hit by enemies
 
     '''
+
     r = np.array(r)
     # initialize discounted reward array with zeros
     discounted_r = np.zeros_like(r)
 
     # r[t] == sum of all rewards occurring after t
-    sum_r = 0
     # initialize var that will hold sum through reverse iteration
+    sum_r = 0
     for t in reversed(range(0, r.size)):
-        # if r[t] != 0:
-        #     # reset the sum, since this was a game boundary (pong specific!)
-        #     sum_r = 0
+        # a reward of 0 indicates a game boundary (5 seconds passed or we finished the ski course), reset reward sum
+        if r[t] != 0:
+            sum_r = 0
         sum_r = sum_r * decay_factor + r[t]
         discounted_r[t] = sum_r
     return discounted_r.tolist()
