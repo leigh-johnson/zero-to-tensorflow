@@ -58,9 +58,9 @@ def discount_rewards(r, decay_factor=0.99):
     sum_r = 0
     # initialize var that will hold sum through reverse iteration
     for t in reversed(range(0, r.size)):
-        if r[t] != 0:
-            # reset the sum, since this was a game boundary (pong specific!)
-            sum_r = 0
+        # if r[t] != 0:
+        #     # reset the sum, since this was a game boundary (pong specific!)
+        #     sum_r = 0
         sum_r = sum_r * decay_factor + r[t]
         discounted_r[t] = sum_r
     return discounted_r.tolist()
