@@ -11,6 +11,7 @@
 
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # Python
+import sys
 import logging
 import argparse
 import os
@@ -124,7 +125,6 @@ def main(args):
             move_cost = args.move_penalty * \
                 tf.reduce_sum(probs * [a['penalty']
                                        for a in ACTIONS.values()], axis=1)
-
             loss = tf.reduce_sum(processed_rewards *
                                  cross_entropies + move_cost)
 
@@ -231,8 +231,8 @@ def main(args):
                     epoch_memory.extend(zip(obs, lbl, prwd))
 
                     # calculate the running rollout reward
-                    _rollout_reward = _rollout_reward + sum(rwd)
 
+                    _rollout_reward = 0.9 * _rollout_reward + 0.1 * sum(rwd)
                     episode_memory = []
 
                     # if args.render:
@@ -340,7 +340,7 @@ def parse_args():
     parser.add_argument(
         '--move-penalty',
         type=float,
-        default=0.9,
+        default=0.99,
         help='additional penalty (loss function multipler) applied when actor is moved, which discourages super-human bursts of movement'
     )
     parser.add_argument(
@@ -360,6 +360,13 @@ def parse_args():
         type=int,
         default=1
     )
+    parser.add_argument(
+        '--gpu',
+        type=str2bool,
+        nargs='?',
+        const=True, default=False,
+        help='Enforce GPU computation where possible'
+    )
 
     args = parser.parse_args()
     # save all checkpoints
@@ -370,6 +377,11 @@ def parse_args():
 
 if __name__ == '__main__':
     args = parse_args()
-    logging.basicConfig(level=args.loglevel)
 
+    logging.basicConfig(level=args.loglevel)
+    if args.gpu and tf.test.gpu_device_name():
+        logging.info('Default GPU: {}'.format(tf.test.gpu_device_name()))
+    elif args.gpu:
+        logger.error('Failed to find default GPU.')
+        sys.exit(1)
     main(args)
